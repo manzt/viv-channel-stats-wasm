@@ -1,7 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
+// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -67,7 +66,7 @@ fn get_cutoff_arr(arr: &[u32]) -> &[u32] {
 
 #[wasm_bindgen]
 pub fn gather_stats(arr: &mut [u32]) -> Stats {
-    arr.sort();
+    arr.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
     let length = arr.len() as f64;
     let total = arr.iter().fold(0.0, |sum, &n| sum + n as f64);
