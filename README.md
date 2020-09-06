@@ -9,5 +9,6 @@ wasm-pack build --target nodejs
 ### 🔬 Run example
 
 ```
-node ./example.js
+$ cd benchmark
+$ node ./index.js
 ```
