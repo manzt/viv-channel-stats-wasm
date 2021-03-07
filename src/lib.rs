@@ -55,19 +55,8 @@ impl Stats {
     }
 }
 
-fn get_cutoff_arr(arr: &[u32]) -> &[u32] {
-    for (i, val) in arr.iter().enumerate() {
-        if val >= &1 {
-            return &arr[i..];
-        }
-    }
-    arr
-}
-
 #[wasm_bindgen]
 pub fn gather_stats(arr: &mut [u32]) -> Stats {
-    arr.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-
     let length = arr.len() as f64;
     let total = arr.iter().fold(0.0, |sum, &n| sum + n as f64);
     let mean = total / length;
@@ -77,17 +66,53 @@ pub fn gather_stats(arr: &mut [u32]) -> Stats {
         .fold(0.0, |sum, &n| sum + ((n as f64 - mean) as f64).powi(2));
     let sd = (sum_squared / length).sqrt();
 
-    let min = arr[0];
-    let max = arr[arr.len() - 1];
-    let median = arr[arr.len() / 2] as f64;
-    let q1 = arr[arr.len() / 4] as f64;
-    let q3 = arr[3 * (arr.len() / 4)] as f64;
+    let min: f64;
+    {
+        let (_, value, _) = arr.select_nth_unstable(0);
+        min = *value as f64;
+    }
 
-    let cutoff_arr = get_cutoff_arr(arr);
+    let max: f64;
+    {
+        let (_, value, _) = arr.select_nth_unstable(arr.len() - 1);
+        max = *value as f64;
+    }
+
+    let median: f64;
+    {
+        let (_, value, _) = arr.select_nth_unstable(arr.len() / 2);
+        median = *value as f64;
+    }
+
+    let q1: f64;
+    {
+        let (_, value, _) = arr.select_nth_unstable(arr.len() / 4);
+        q1 = *value as f64;
+    }
+
+    let q3: f64;
+    {
+        let (_, value, _) = arr.select_nth_unstable(3 * (arr.len() / 4));
+        q3 = *value as f64;
+    }
+
+    let mut cutoff_arr: Vec<&u32> = arr.iter().filter(|x| x >= &&1u32).collect();
     let clength = cutoff_arr.len() as f64;
     let cutoff_percentile = 0.0005;
-    let auto_min = cutoff_arr[(clength * cutoff_percentile).floor() as usize];
-    let auto_max = cutoff_arr[(clength * (1.0 - cutoff_percentile)).floor() as usize];
+
+    let auto_min: f64;
+    {
+        let (_, value, _) =
+            cutoff_arr.select_nth_unstable((clength * cutoff_percentile).floor() as usize);
+        auto_min = **value as f64;
+    }
+
+    let auto_max: f64;
+    {
+        let (_, value, _) =
+            cutoff_arr.select_nth_unstable((clength * (1.0 - cutoff_percentile)).floor() as usize);
+        auto_max = **value as f64;
+    }
 
     Stats {
         mean,
@@ -95,7 +120,7 @@ pub fn gather_stats(arr: &mut [u32]) -> Stats {
         q1,
         q3,
         median,
-        domain: (min as f64, max as f64),
-        auto_sliders: (auto_min as f64, auto_max as f64),
+        domain: (min, max),
+        auto_sliders: (auto_min, auto_max),
     }
 }
